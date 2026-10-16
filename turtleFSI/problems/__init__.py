@@ -100,6 +100,7 @@ default_variables = dict(
     lmbda=1.0,                                 # [0, 1.0] Cst relaxation factor for the Newton solution update
     recompute=5,                               # recompute the Jacobian after "recompute" Newton iterations
     recompute_tstep=1,                         # recompute the Jacobian after "recompute_tstep" time steps (advanced option: =1 is preferred)
+    recompute_relative=1.0,                    # recompute the Jacobian if residual > "recompute_relative" * previous residual (1.0: only if it grows)
     compiler_parameters=_compiler_parameters,  # Update the default values of the compiler arguments (FEniCS)
 
     # Output settings

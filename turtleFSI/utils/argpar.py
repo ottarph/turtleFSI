@@ -221,6 +221,12 @@ def parse():
     parser.add_argument("--recompute-tstep", type=int, default=None,
                         metavar="Recompute Jacobian over time steps",
                         help="How often to recompute the Jacobian over time steps.")
+    parser.add_argument("--recompute-relative", type=restricted_float, default=None,
+                        metavar="Residual ratio threshold",
+                        help="Recompute the Jacobian if the Newton residual is larger than this fraction of the" +
+                        " previous residual, i.e. it decreased too slowly. Should be in the range [0.0, 1.0]." +
+                        " 0.0 recomputes always and 1.0 recomputes only if the residual grows. Is only active" +
+                        " after the second Newton step.")
     parser.add_argument("--compiler-parameters", dest="compiler_parameters",
                         action=StoreDictKeyPair, nargs="+", metavar="KEY=VAL",
                         help="Update the defaul values of the compiler arguments" +

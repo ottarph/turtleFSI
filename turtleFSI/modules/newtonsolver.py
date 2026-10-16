@@ -31,13 +31,15 @@ def solver_setup(F_fluid_linear, F_fluid_nonlinear, F_solid_linear, F_solid_nonl
     return dict(F=F, J_nonlinear=J_nonlinear, A_pre=A_pre, A=A, b=b, up_sol=up_sol)
 
 
-def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_tstep, compiler_parameters,
-                 dvp_, up_sol, dvp_res, rtol, atol, max_it, counter, first_step_num, verbose, **namespace):
+def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_tstep, recompute_relative,
+                 compiler_parameters, dvp_, up_sol, dvp_res, rtol, atol, max_it, counter, first_step_num,
+                 verbose, **namespace):
     """
     Solve the non-linear system of equations with Newton scheme. The standard is to compute the Jacobian
-    every time step, however this is computationally costly. We have therefore added two parameters for
-    re-computing only every 'recompute' iteration, or for every 'recompute_tstep' time step. Setting 'recompute'
-    to != 1 is faster, but can impact the convergence rate. Altering 'recompute_tstep' is considered an advanced option,
+    every time step, however this is computationally costly. We have therefore added three parameters for
+    re-computing only every 'recompute' iteration, for every 'recompute_tstep' time step, or for when the
+    decrease in the residual relative to the last is insufficient. Setting 'recompute' to != 1 is faster,
+    but can impact the convergence rate. Altering 'recompute_tstep' is considered an advanced option,
     and should be used with care.
     """
     # Initial values
@@ -62,7 +64,13 @@ def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_t
         # Recompute Jacobian on first step of simulation (important if restart is used)
         recompute_initialize = iter == 0 and counter == first_step_num
 
-        if recompute_for_timestep or recompute_frequency or recompute_residual or recompute_initialize:
+        # Recompute Jacobian because "latest residual" / "last residual" is greater than ratio threshold.
+        # residual / last_residual is not well defined for the first two iterations, since the right hand side is
+        # computed after the test for Jacobian reassembly.
+        recompute_relative_residual = iter > 1 and residual > last_residual * recompute_relative
+
+        if (recompute_for_timestep or recompute_frequency or recompute_residual or recompute_relative_residual
+                or recompute_initialize):
             if MPI.rank(MPI.comm_world) == 0 and verbose:
                 print("Compute Jacobian matrix")
             # Assemble non-linear part of Jacobian, keep sparsity pattern (keep_diagonal=True)

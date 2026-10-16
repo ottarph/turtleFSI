@@ -226,7 +226,7 @@ def parse():
                         help="Recompute the Jacobian if the Newton residual is larger than this fraction of the" +
                         " previous residual, i.e. it decreased too slowly. Should be in the range [0.0, 1.0]." +
                         " 0.0 recomputes always and 1.0 recomputes only if the residual grows. Is only active" +
-                        " after the second Newton step.")
+                        " after the first Newton step.")
     parser.add_argument("--compiler-parameters", dest="compiler_parameters",
                         action=StoreDictKeyPair, nargs="+", metavar="KEY=VAL",
                         help="Update the defaul values of the compiler arguments" +

@@ -48,10 +48,22 @@ def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_t
     rel_res = 10**8
 
     # Capture if residual increases from last iteration
-    last_rel_res = residual
-    last_residual = rel_res
+    last_rel_res = rel_res
+    last_residual = residual
     up_sol.set_operator(A)
     while rel_res > rtol and residual > atol and iter < max_it:
+        # Assemble right hand side vector
+        if b is None:
+            b = assemble(-F)
+        else:
+            assemble(-F, tensor=b)
+
+        # Apply boundary conditions before solve
+        [bc.apply(b, dvp_["n"].vector()) for bc in bcs]
+
+        # Check residual norm
+        residual = b.norm('l2')
+
         # Check if recompute Jacobian from 'recompute_tstep' (time step)
         recompute_for_timestep = iter == 0 and (counter % recompute_tstep == 0)
 
@@ -65,9 +77,8 @@ def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_t
         recompute_initialize = iter == 0 and counter == first_step_num
 
         # Recompute Jacobian because "latest residual" / "last residual" is greater than ratio threshold.
-        # residual / last_residual is not well defined for the first two iterations, since the right hand side is
-        # computed after the test for Jacobian reassembly.
-        recompute_relative_residual = iter > 1 and residual > last_residual * recompute_relative
+        # residual / last_residual is not well defined for the first iteration.
+        recompute_relative_residual = iter > 0 and residual > last_residual * recompute_relative
 
         if (recompute_for_timestep or recompute_frequency or recompute_residual or recompute_relative_residual
                 or recompute_initialize):
@@ -89,14 +100,6 @@ def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_t
             A.ident_zeros()
             [bc.apply(A) for bc in bcs]
 
-        # Aseemble right hand side vector
-        if b is None:
-            b = assemble(-F)
-        else:
-            assemble(-F, tensor=b)
-
-        # Apply boundary conditions before solve
-        [bc.apply(b, dvp_["n"].vector()) for bc in bcs]
         # Solve the linear system A * x = b where A is the Jacobian matrix, x is the Newton increment and b is the -residual
         up_sol.solve(dvp_res.vector(), b)
         # Update solution using the Newton increment
@@ -109,8 +112,7 @@ def newtonsolver(F, J_nonlinear, A_pre, A, b, bcs, lmbda, recompute, recompute_t
         last_residual = residual
         last_rel_res = rel_res
 
-        # Check residual
-        residual = b.norm('l2')
+        # Check increment norm
         rel_res = norm(dvp_res, 'l2')
         if rel_res > 1E20 or residual > 1E20 or isnan(rel_res) or isnan(residual):
             raise RuntimeError("Error: The simulation has diverged during the Newton solve with residual = %.3e and relative residual = %.3e" % (residual, rel_res))

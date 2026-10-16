@@ -27,7 +27,8 @@ typically be done in simulations where the Newton iterations exhibit “good” 
 turtleFSI, the reuse of the Jacobian matrix can be set by the flags ``recompute``, which takes
 an integer and controls how many iterations reusing the same Jacobian matrix in the same timestep. 
 ``recompute_tstep``, does the same, but controls how many time steps to take reusing the same
-Jacobian matrix.
+Jacobian matrix. ``recompute_relative`` takes a float from 0 to 1 and forces a Jacobian reassembly
+if the computed residual is greater than ``recompute_relative`` times the last residual.
 
 .. note::
    Any increase of the relative or absolute residual will trigger turtleFSI to recompute the

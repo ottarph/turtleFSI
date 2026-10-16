@@ -136,3 +136,29 @@ def test_save_deg2():
     assert d_path.is_file()
     assert v_path.is_file()
     assert p_path.is_file()
+
+
+def test_recompute_relative():
+    """test the parameter for Jacobian reassembly on insufficient residual"""
+    cmd = ("mpirun -np {} turtleFSI --problem TF_fsi -dt 0.01 -T 0.05 --verbose True" +
+           " --theta 0.51 --folder tmp --sub-folder 8 --recompute-relative 0.00001" +
+           " --recompute 1000")
+    result = subprocess.run(cmd.format(2), shell=True, check=True, capture_output=True, text=True)
+    jacobian_assemblies = result.stdout.count("Compute Jacobian matrix")
+    jacobian_assemblies_reference = 7
+
+    assert jacobian_assemblies > jacobian_assemblies_reference
+
+    drag = np.loadtxt("tmp/8/Drag.txt")[-1]
+    lift = np.loadtxt("tmp/8/Lift.txt")[-1]
+    distance_x = np.loadtxt("tmp/8/dis_x.txt")[-1]
+    distance_y = np.loadtxt("tmp/8/dis_y.txt")[-1]
+    distance_x_reference = -6.896013956339182e-06
+    distance_y_reference = 1.876355330341896e-09
+    drag_reference = 4.407481239804155
+    lift_reference = -0.005404703556977697
+
+    assert np.isclose(distance_x, distance_x_reference)
+    assert np.isclose(distance_y, distance_y_reference)
+    assert np.isclose(drag, drag_reference)
+    assert np.isclose(lift, lift_reference)
